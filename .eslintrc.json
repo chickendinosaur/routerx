@@ -1,0 +1,74 @@
+{
+	"extends": ["standard", "standard-jsx"],
+	"root": true,
+	"env": {
+		"browser": true,
+		"node": true
+	},
+	"ext": [
+		".js",
+		".jsx",
+		".html"
+	],
+	"parserOptions": {
+		"ecmaVersion": 6,
+		"sourceType": "module",
+		"ecmaFeatures": {
+			"jsx": true
+		}
+	},
+	"plugins": [
+		"standard",
+		"react",
+		"html"
+	],
+	"rules": {
+		"eqeqeq": 1,
+		"quotes": ["error", "single", {
+			"avoidEscape": true,
+			"allowTemplateLiterals": true
+		}],
+		"prefer-template": "error",
+		"semi": ["error", "always"],
+		"no-extra-semi": "error",
+		"indent": ["error", "tab"],
+		"no-tabs": 0,
+		"no-unused-vars": ["error", {
+			"vars": "all",
+			"varsIgnorePattern": "Inferno",
+			"args": "none"
+		}],
+		"object-curly-newline": ["error", {
+			"multiline": true,
+			"minProperties": 1
+		}],
+		"react/jsx-boolean-value": ["error", "always"],
+		"react/jsx-curly-spacing": ["error", "never"],
+		"react/jsx-equals-spacing": ["error", "never"],
+		"react/jsx-indent": ["error", "tab"],
+		"react/jsx-indent-props": ["error", "tab"],
+		"react/jsx-no-duplicate-props": "error",
+		"react/jsx-no-undef": "error",
+		"react/jsx-space-before-closing": "error",
+		"react/jsx-uses-react": "error",
+		"react/jsx-uses-vars": "error",
+		"react/self-closing-comp": "error",
+		"react/jsx-key": "error",
+		"react/jsx-first-prop-new-line": ["error", "multiline-multiprop"],
+		"react/jsx-max-props-per-line": ["error", {
+			"maximum": 1,
+			"when": "always"
+		}],
+		"react/jsx-closing-bracket-location": ["error", {
+			"nonEmpty": "tag-aligned",
+			"selfClosing": "tag-aligned"
+		}],
+		"react/jsx-sort-props": ["error", {
+			"callbacksLast": true,
+			"shorthandFirst": false,
+			"shorthandLast": false,
+			"ignoreCase": true,
+			"noSortAlphabetically": true
+		}]
+	}
+}

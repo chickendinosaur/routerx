@@ -1,0 +1,66 @@
+{
+  "name": "@chickendinosaur/routerx",
+  "version": "0.0.1",
+  "main": "index.js",
+  "files": [
+    "**/*.js"
+  ],
+  "scripts": {
+    "benchmark": "cd benchmark && for %i in (*.benchmark.js*) do echo. && echo %i && echo. && browserify -t babelify %i | browser-run",
+    "build": "npm run clean && babel src -d lib --ignore *.*.js* && cp package.json lib & cp README.md lib & cp LICENSE lib",
+    "clean": "rm -rf lib",
+    "deploy": "npm run test && eslint src --fix && csscomb src && eslint example --fix && csscomb example && npm run build && npm publish lib",
+    "start": "webpack-dev-server --inline",
+    "test": "cd test && for /R %i in (*.spec.js*) do browserify -t babelify %i | tap-closer | browser-run | tap-spec"
+  },
+  "author": {
+    "name": "John Pittman",
+    "email": "john@chickendinosaur.com",
+    "url": "https://github.com/chickendinosaur"
+  },
+  "license": "MIT",
+  "description": "Isomorphic router for the browser and nodejs environments.",
+  "keywords": [
+    "isomorphic",
+    "routing"
+  ],
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chickendinosaur/routerx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chickendinosaur/routerx/issues"
+  },
+  "homepage": "https://github.com/chickendinosaur/routerx#readme",
+  "peerDependencies": {},
+  "dependencies": {},
+  "devDependencies": {
+    "babel-cli": "^6.23.0",
+    "babel-loader": "^6.3.2",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.23.0",
+    "babelify": "^7.3.0",
+    "benchmark": "^2.1.3",
+    "browser-run": "^3.4.0",
+    "browserify": "^14.1.0",
+    "css-loader": "^0.26.2",
+    "csscomb": "^4.0.1",
+    "eslint": "^3.16.1",
+    "eslint-config-standard": "^7.0.0",
+    "eslint-config-standard-jsx": "^3.3.0",
+    "eslint-plugin-html": "^2.0.1",
+    "eslint-plugin-promise": "^3.5.0",
+    "eslint-plugin-react": "^6.10.0",
+    "eslint-plugin-standard": "^2.1.1",
+    "file-loader": "^0.10.1",
+    "node-sass": "^4.5.0",
+    "sass-loader": "^6.0.2",
+    "style-loader": "^0.13.2",
+    "tap-closer": "^1.0.0",
+    "tap-spec": "^4.1.1",
+    "tape": "^4.6.3",
+    "tapes": "^4.1.0",
+    "webpack": "^2.2.1",
+    "webpack-dev-server": "^2.4.1"
+  }
+}
