@@ -31,8 +31,8 @@
 		"prefer-template": "error",
 		"semi": ["error", "always"],
 		"no-extra-semi": "error",
-		"indent": ["error", "tab"],
-		"no-tabs": 0,
+		"indent": [2, 2],
+		"no-tabs": 1,
 		"no-unused-vars": ["error", {
 			"vars": "all",
 			"varsIgnorePattern": "Inferno",

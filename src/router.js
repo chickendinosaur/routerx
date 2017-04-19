@@ -1,102 +1,137 @@
 'use strict';
 
-const normalizePathname = require('./router');
+const normalizePathname = require('./normalize-pathname');
 
-// Tree sorted by router expression chunks.
-var routeTreeRoot = {};
-
-function RouteTreeNode () {}
-
-/**
-Storage object.
-Used with RouteConfig.
-@class ParamNode
-@constructor
-*/
-function ParamNode () {
-	this.paramName = null;
-	this.paramIndex = null;
+function RouteParamTreeNode () {
+  // Static param name bucket. Object literal of RouteParamTreeNodes.
+  this.staticNodes = null;
+  // Dynamic param name. RouteParamTreeNode.
+  this.dynamicNode = null;
+  // Route expression used as key for looking up corresponding route info.
+  this.routeExp = null; // ex. /people/:id
 }
 
-/**
-Storage object.
-Contains all functionality for a route expression.
-@class RouteConfig
-@constructor
-*/
-function RouteConfig () {
-	this.params = [];
-	this.methods = null;
-	this.middleware = null;
-	this.handlers = null;
-	this.routeExp = null;
+function RouteInfo () {
+  // Store index of where to find the paramaeter in the parsed route url.
+  // Shared across request methods.
+  this.paramInfos = null;
+  // Middleware callback stack.
+  this.middleware = null;
+  // Handler stack
+  this.handlers = null;
 }
 
-// Used as a context to pass collected route expression data across router methods.
-var currRouteConfig = null;
-
-/**
- */
-function parseRouteExpression (routeExp) {
-	// Decode route expression.
-
-	var pathname = normalizePathname(routeExp);
-	if (pathname.length === 1) {
-		return;
-	}
-
-	var routeExpChunks = pathname.split('/');
+function ParamInfo (name, index) {
+  // Property/variable name.
+  this.name = name;
+  // Used to access the index of the split incoming route.
+  this.index = index;
 }
 
 /**
  */
 function Router (req, res) {}
 
+// Tree sorted by router expression chunks.
+Router._routeParamTree = new RouteParamTreeNode();
+
+// Route expression route info map.
+Router._routeExpressionInfos = {};
+
+// Request method routes map.
+Router._requestMethodBuckets = {};
+// Routes hit on any method request type.
+Router._globalRequestBucket = {};
+
 /**
  */
-Router.on = function (method1, method2) {
-	currRouteConfig = new RouteConfig();
-	currRouteConfig.methods = arguments;
+var currRequestMethods = null;
+Router.on = function () {
+  currRequestMethods = arguments;
 
-	return {
-		route: Router.route
-	};
+  return {
+    route: Router.route
+  };
 };
 
 /**
  */
+
 Router.route = function (routeExp) {
-	currRouteConfig.routeExp = routeExp;
+  var routeInfo = Router._routeExpressionInfos[routeExp];
+  if (routeInfo === undefined) {
+    routeInfo = Router._routeExpressionInfos[routeExp] = new RouteInfo();
+    routeInfo.routeExp = routeExp;
 
-	// Parse route expression.
-	var pathname = normalizePathname(routeExp);
+    // Generate split pathname.
+    var pathname = normalizePathname(routeExp);
+    var routeExpChunks = pathname === '/' ? null : pathname.split('/');
+    var paramTreeNode = Router._routeParamTree;
 
-	if (pathname.length === 1) {
-		return;
-	}
+    if (routeExpChunks !== null) {
+      var routeChunk = null;
+      var i = -1;
+      var n = routeExpChunks.length;
 
-	var routeExpChunks = pathname.split('/');
+      // Insert route config into route tree.
+      // Iterate from top of the tree -> down.
+      while (++i < n) {
+        routeChunk = routeExpChunks[i];
 
-	return {
-		use: Router.use,
-		handle: Router.handle
-	};
+        // Check for param key.
+        if (routeChunk.charAt(0) === ':') {
+          // Since param ids are undetermined, there is nothing to map to.
+          if (paramTreeNode.dynamicNode === null) {
+            paramTreeNode.dynamicNode = new RouteParamTreeNode();
+          }
+
+          paramTreeNode = paramTreeNode.dynamicNode;
+
+          // Generate and store a param info object.
+          if (routeInfo.paramInfos === null) {
+            routeInfo.paramInfos = [];
+          }
+
+          routeInfo.paramInfos.push(new ParamInfo(routeChunk.substring(1), i));
+        } else {
+          // Generate a static param map to lookup possible matches.
+          if (paramTreeNode.staticNodes === null) {
+            paramTreeNode.staticNodes = {};
+          }
+
+          paramTreeNode = paramTreeNode.staticNodes[routeChunk];
+
+          if (paramTreeNode === undefined) {
+            paramTreeNode = Router._routeParamTree.staticNodes[routeChunk] = new RouteParamTreeNode();
+          }
+        }
+      }
+
+      // Set route expression on the matching destination node.
+      paramTreeNode.routeExp = routeExp;
+    }
+  } else {
+
+  }
+
+  // API chain.
+  return {
+    use: Router.use,
+    handle: Router.handle
+  };
 };
 
 /**
  */
 Router.use = function (middleware1, middleware2) {
-	currRouteConfig.middleware = arguments;
-
-	return {
-		handle: Router.handle
-	};
+  return {
+    handle: Router.handle
+  };
 };
 
 /**
  */
 Router.handle = function (handler1, handler2) {
-	currRouteConfig.handlers = arguments;
 };
 
 module.exports = Router;

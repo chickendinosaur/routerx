@@ -20,7 +20,7 @@ var pathname = null;
 Test
 */
 
-test('routerx/normalize-pathname', function (t) {
+test('router/normalize-pathname', function (t) {
 	/*
 	beforeEach
 	*/
@@ -46,7 +46,7 @@ test('routerx/normalize-pathname', function (t) {
 		pathname = normalizePathname(testPathname);
 
 		t.equal(pathname.indexOf('//'), -1, 'Only single slashes exist.');
-		t.equal(pathname.charAt(0), '/', 'First character is a slash.');
+		t.notEqual(pathname.charAt(0), '/', 'First character is not a slash.');
 		t.notEqual(pathname.charAt(pathname.length - 1), '/', 'Last character is not a slash.');
 		t.end();
 	});

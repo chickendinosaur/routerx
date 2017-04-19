@@ -9,9 +9,10 @@
     "benchmark": "cd benchmark && for %i in (*.benchmark.js*) do echo. && echo %i && echo. && browserify -t babelify %i | browser-run",
     "build": "npm run clean && babel src -d lib --ignore *.*.js* && cp package.json lib & cp README.md lib & cp LICENSE lib",
     "clean": "rm -rf lib",
-    "deploy": "npm run test && eslint src --fix && csscomb src && eslint example --fix && csscomb example && npm run build && npm publish lib",
+    "deploy": "npm run test && npm run build && npm publish lib",
     "start": "webpack-dev-server --inline",
-    "test": "cd test && for /R %i in (*.spec.js*) do browserify -t babelify %i | tap-closer | browser-run | tap-spec"
+    "test:router": "tape test/router.spec.js | tap-spec",
+    "test": "cd test && (for /R %i in (*.spec.js*) do (browserify -t babelify %i | tap-closer | browser-run | tap-spec)) && cd .. && eslint src --fix && eslint example --fix && eslint benchmark --fix && eslint test --fix && csscomb src && csscomb example"
   },
   "author": {
     "name": "John Pittman",
