@@ -1,22 +1,25 @@
 'use strict';
 
-const normalizePathname = require('./normalize-pathname');
+const generateUrlChunks = require('./generate-url-chunks');
 
-function RouteParamTreeNode () {
-  // Static param name bucket. Object literal of RouteParamTreeNodes.
-  this.staticNodes = null;
-  // Dynamic param name. RouteParamTreeNode.
-  this.dynamicNode = null;
-  // Route expression used as key for looking up corresponding route info.
-  this.routeExp = null; // ex. /people/:id
+function RouteParamMapNode () {
+  // Route param look-up map.
+  // ':' represents dynamic param.
+  // '*' represents wildcard.
+  this.nodes = null;
+
+  // Store a ParamInfo object that contains where the parameter is located in the parsed route url.
+  this.paramInfo = null;
+
+  // Request method buckets.
+  // Keys are method names ex. 'GET', 'POST' etc.
+  this.routeConfigs = {};
 }
 
-function RouteInfo () {
-  // Store index of where to find the paramaeter in the parsed route url.
-  // Shared across request methods.
-  this.paramInfos = null;
+function RouteConfig (middleware, handlers) {
   // Middleware callback stack.
   this.middleware = null;
+
   // Handler stack
   this.handlers = null;
 }
@@ -24,114 +27,158 @@ function RouteInfo () {
 function ParamInfo (name, index) {
   // Property/variable name.
   this.name = name;
+
   // Used to access the index of the split incoming route.
   this.index = index;
 }
 
+// Route creation context.
+function RouteCreationContext () {
+  this.requestMethod = '*';
+  this.paramTreeNode = null;
+}
+
+let routeCreationContext = null;
+
 /**
+@method Router
  */
 function Router (req, res) {}
 
+/*
+Testing references.
+*/
+
 // Tree sorted by router expression chunks.
-Router._routeParamTree = new RouteParamTreeNode();
+Router._routeParamTree = new RouteParamMapNode();
 
-// Route expression route info map.
-Router._routeExpressionInfos = {};
-
-// Request method routes map.
-Router._requestMethodBuckets = {};
-// Routes hit on any method request type.
-Router._globalRequestBucket = {};
+// Store index of where to find the paramaeter in the parsed route url.
+Router._routeParamMapNodeCache = {};
 
 /**
+@method _handle
  */
-var currRequestMethods = null;
-Router.on = function () {
-  currRequestMethods = arguments;
+Router._handle = function () {
+  let routeConfig = routeCreationContext.paramTreeNode.routeConfigs[routeCreationContext.requestMethod];
 
-  return {
-    route: Router.route
-  };
-};
-
-/**
- */
-
-Router.route = function (routeExp) {
-  var routeInfo = Router._routeExpressionInfos[routeExp];
-  if (routeInfo === undefined) {
-    routeInfo = Router._routeExpressionInfos[routeExp] = new RouteInfo();
-    routeInfo.routeExp = routeExp;
-
-    // Generate split pathname.
-    var pathname = normalizePathname(routeExp);
-    var routeExpChunks = pathname === '/' ? null : pathname.split('/');
-    var paramTreeNode = Router._routeParamTree;
-
-    if (routeExpChunks !== null) {
-      var routeChunk = null;
-      var i = -1;
-      var n = routeExpChunks.length;
-
-      // Insert route config into route tree.
-      // Iterate from top of the tree -> down.
-      while (++i < n) {
-        routeChunk = routeExpChunks[i];
-
-        // Check for param key.
-        if (routeChunk.charAt(0) === ':') {
-          // Since param ids are undetermined, there is nothing to map to.
-          if (paramTreeNode.dynamicNode === null) {
-            paramTreeNode.dynamicNode = new RouteParamTreeNode();
-          }
-
-          paramTreeNode = paramTreeNode.dynamicNode;
-
-          // Generate and store a param info object.
-          if (routeInfo.paramInfos === null) {
-            routeInfo.paramInfos = [];
-          }
-
-          routeInfo.paramInfos.push(new ParamInfo(routeChunk.substring(1), i));
-        } else {
-          // Generate a static param map to lookup possible matches.
-          if (paramTreeNode.staticNodes === null) {
-            paramTreeNode.staticNodes = {};
-          }
-
-          paramTreeNode = paramTreeNode.staticNodes[routeChunk];
-
-          if (paramTreeNode === undefined) {
-            paramTreeNode = Router._routeParamTree.staticNodes[routeChunk] = new RouteParamTreeNode();
-          }
-        }
-      }
-
-      // Set route expression on the matching destination node.
-      paramTreeNode.routeExp = routeExp;
-    }
+  if (routeConfig === undefined) {
+    routeCreationContext.paramTreeNode.routeConfigs[routeCreationContext.requestMethod] = new RouteConfig(null, arguments);
   } else {
-
+    routeConfig.handlers = arguments;
   }
 
-  // API chain.
-  return {
-    use: Router.use,
-    handle: Router.handle
-  };
+  // Free routeCreationContext.
+  routeCreationContext = null;
 };
 
 /**
+@method _use
  */
-Router.use = function (middleware1, middleware2) {
-  return {
-    handle: Router.handle
-  };
+const useAPIChainLink = {
+  handle: Router._handle
+};
+
+Router._use = function () {
+  routeCreationContext.paramTreeNode.routeConfigs[routeCreationContext.requestMethod] = new RouteConfig(arguments);
+
+  return useAPIChainLink;
 };
 
 /**
+@method _route
  */
-Router.handle = function (handler1, handler2) {
+const routeAPIChainLink = {
+  use: Router._use,
+  handle: Router._handle
+};
+
+Router._route = function (routeExp) {
+  var paramTreeNode = Router._routeParamMapNodeCache[routeExp];
+
+  if (paramTreeNode === undefined) {
+    var routeExpChunks = generateUrlChunks(routeExp);
+    var routeChunk = null;
+    var i = -1;
+    var n = routeExpChunks.length;
+    var paramInfo = null;
+
+    paramTreeNode = Router._routeParamTree;
+
+    // Insert route config into route tree.
+    // Iterate from top of the tree -> down.
+    while (++i < n) {
+      routeChunk = routeExpChunks[i];
+
+      if (paramTreeNode.nodes === null) {
+        paramTreeNode.nodes = {};
+      }
+
+      switch (routeChunk.charAt(0)) {
+      // Check for param key.
+      case ':':
+        if (paramTreeNode.nodes[':'] === undefined) {
+          paramTreeNode.nodes[':'] = new RouteParamMapNode();
+        }
+
+        paramTreeNode = paramTreeNode.nodes[':'];
+
+        if (paramInfo === null) {
+          paramInfo = [];
+        }
+
+        paramInfo.push(new ParamInfo(routeChunk.substring(1), i));
+        break;
+      // Static params.
+      default:
+        // Generate a static param map to lookup possible matches.
+        if (paramTreeNode.nodes[routeChunk] === undefined) {
+          paramTreeNode.nodes[routeChunk] = new RouteParamMapNode();
+        }
+
+        paramTreeNode = paramTreeNode.nodes[routeChunk];
+      }
+    }
+
+    // Cache the param tree node by route expression.
+    paramTreeNode.paramInfo = paramInfo;
+
+    Router._routeParamMapNodeCache[routeExp] = paramTreeNode;
+  }
+
+  // Set route creation context.
+  routeCreationContext.paramTreeNode = paramTreeNode;
+
+  return routeAPIChainLink;
+};
+
+/**
+*/
+const onAPIChainLink = {
+  route: Router._route,
+  use: Router._use
+};
+
+Router.on = function (requestMethod) {
+  routeCreationContext = new RouteCreationContext();
+
+  if (/^get$/i.test(requestMethod) === true) {
+    requestMethod = 'GET";';
+  } else if (/^post$/i.test(requestMethod) === true) {
+    requestMethod = 'POST";';
+  } else if (/^put$/i.test(requestMethod) === true) {
+    requestMethod = 'PUT";';
+  } else if (/^delete$/i.test(requestMethod) === true) {
+    requestMethod = 'DELETE";';
+  } else if (/^head$/i.test(requestMethod) === true) {
+    requestMethod = 'HEAD";';
+  } else if (requestMethod !== '*') {
+    throw new Error(`Router method type '${requestMethod}' is not a valid HTTP method.`);
+  }
+
+  // Set route creation context.
+  routeCreationContext.requestMethod = requestMethod;
+
+  return onAPIChainLink;
 };
 
 module.exports = Router;

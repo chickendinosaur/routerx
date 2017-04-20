@@ -11,13 +11,10 @@ if (isBrowser) {
 Setup
 */
 
-const router = require('../src/router');
+const Grapnel = require('grapnel');
+const router = new Grapnel();
 
-router
-.on('get')
-.route('products/:category/:id')
-.use(function (req, res, next) { next(); })
-.handle(function (req) {});
+router.get('products/:category/:id', function (req, event, next) { next(); }, function (req) {});
 
 /*
 Benchmark
@@ -25,7 +22,10 @@ Benchmark
 
 suite
 .add('Define route.', function () {
-  router.on('get').route('products/:category/:id').use(function (req, res, next) { next(); }).handle(function (req) {});
+  router.get('products/:category/a', function (req, event, next) { next(); }, function (req) {});
+})
+.add('Navigate.', function () {
+  router.navigate('products/a/1');
 })
 .on('cycle', function (event) {
   var output = String(event.target);
