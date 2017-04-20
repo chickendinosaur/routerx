@@ -18,10 +18,10 @@ function RouteParamMapNode () {
 
 function RouteConfig (middleware, handlers) {
   // Middleware callback stack.
-  this.middleware = null;
+  this.middleware = middleware;
 
   // Handler stack
-  this.handlers = null;
+  this.handlers = handlers;
 }
 
 function ParamInfo (name, index) {
@@ -162,15 +162,15 @@ Router.on = function (requestMethod) {
   routeCreationContext = new RouteCreationContext();
 
   if (/^get$/i.test(requestMethod) === true) {
-    requestMethod = 'GET";';
+    requestMethod = 'GET';
   } else if (/^post$/i.test(requestMethod) === true) {
-    requestMethod = 'POST";';
+    requestMethod = 'POST';
   } else if (/^put$/i.test(requestMethod) === true) {
-    requestMethod = 'PUT";';
+    requestMethod = 'PUT';
   } else if (/^delete$/i.test(requestMethod) === true) {
-    requestMethod = 'DELETE";';
+    requestMethod = 'DELETE';
   } else if (/^head$/i.test(requestMethod) === true) {
-    requestMethod = 'HEAD";';
+    requestMethod = 'HEAD';
   } else if (requestMethod !== '*') {
     throw new Error(`Router method type '${requestMethod}' is not a valid HTTP method.`);
   }
