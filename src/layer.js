@@ -2,8 +2,8 @@
 
 module.exports = Layer;
 
-function Layer (, timeout) {
-  this._middleware = middleware || null;
+function Layer (paramTreeNode, timeout) {
+  this._middleware = null;
   this._timeout = timeout || 30;
 }
 
