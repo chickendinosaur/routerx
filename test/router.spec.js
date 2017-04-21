@@ -3,7 +3,7 @@
 const tape = require('tape');
 const tapes = require('tapes');
 const test = tapes(tape, {
-  delimiter: '->'
+  delimiter: '.'
 });
 
 /*
@@ -14,20 +14,26 @@ const Router = require('../src/router');
 
 let middleware1 = function (req, res, next) { next(); };
 let middleware2 = function (req, res, next) { next(); };
-let handler1 = function (req, res) {};
-let handler2 = function (req, res) {};
+let asyncMiddleware1 = function (req, res, next) { next(); };
+let asyncMiddleware2 = function (req, res, next) { next(); };
+let handler = function (req, res) {};
+let asyncHandler1 = function (req, res) {};
+let asyncHandler2 = function (req, res) {};
+
+var testPathname = '///a/:id//b//';
+var testPathnameSingleSlash = '/';
 
 Router
 .on('get')
-.route('/a/:id//b//')
-.use(middleware1, middleware2)
-.handle(handler1, handler2);
+.route(testPathname)
+.use(middleware1, [asyncMiddleware1, asyncMiddleware2], middleware2)
+.handle(handler, [asyncHandler1, asyncHandler2]);
 
 /*
 Test
 */
 
-test('router', function (t) {
+test('Router', function (t) {
   t.beforeEach(function (t) {
     t.end();
   });
@@ -36,8 +42,19 @@ test('router', function (t) {
     t.end();
   });
 
-  t.test('._route', function (t) {
-    let paramTreeNode = Router._routeParamTree;
+  t.test('_generateUrlChunks', function (t) {
+    var pathChunks = Router._generateUrlChunks(testPathname);
+    t.equal(pathChunks[0], 'a', 'First character is not a slash.');
+    t.equal(pathChunks[pathChunks.length - 1], 'b', 'Last character is not a slash.');
+
+    pathChunks = Router._generateUrlChunks(testPathnameSingleSlash);
+    t.equal(pathChunks[0], '*', 'First index is wildcard token when using only slash.');
+    t.equal(pathChunks.length, 1, 'Maintains a length of one.');
+    t.end();
+  });
+
+  t.test('_route', function (t) {
+    let paramTreeNode = Router._routeParamTreeRoot;
 
     t.notEqual(paramTreeNode.nodes['a'], undefined, 'Created static param tree node.');
     t.notEqual(paramTreeNode.nodes['a'].nodes[':'], undefined, 'Created dynamic param tree node.');
@@ -47,22 +64,22 @@ test('router', function (t) {
     t.end();
   });
 
-  t.test('._use', function (t) {
-    let paramTreeNode = Router._routeParamTree;
+  t.test('_use', function (t) {
+    let paramTreeNode = Router._routeParamTreeRoot;
 
-    t.equal(paramTreeNode.nodes['a'].nodes[':'].nodes['b'].routeConfigs['GET'].middleware.length, 2, 'Middleware added..');
+    t.equal(paramTreeNode.nodes['a'].nodes[':'].nodes['b'].routeConfigs['GET'].middleware.length, 3, 'Middleware added..');
     t.end();
   });
 
-  t.test('._handle', function (t) {
-    let paramTreeNode = Router._routeParamTree;
+  t.test('_handle', function (t) {
+    let paramTreeNode = Router._routeParamTreeRoot;
 
     t.equal(paramTreeNode.nodes['a'].nodes[':'].nodes['b'].routeConfigs['GET'].handlers.length, 2, 'Handlers added..');
     t.end();
   });
 
   t.test('.on', function (t) {
-    let paramTreeNode = Router._routeParamTree;
+    let paramTreeNode = Router._routeParamTreeRoot;
 
     t.notEqual(paramTreeNode.nodes['a'].nodes[':'].nodes['b'].routeConfigs['GET'], undefined, 'Request method type transformed to uppercase.');
     t.end();

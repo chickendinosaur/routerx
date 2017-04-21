@@ -1,42 +1,9 @@
 'use strict';
 
-const generateUrlChunks = require('./generate-url-chunks');
-
-function RouteParamMapNode () {
-  // Route param look-up map.
-  // ':' represents dynamic param.
-  // '*' represents wildcard.
-  this.nodes = null;
-
-  // Store a ParamInfo object that contains where the parameter is located in the parsed route url.
-  this.paramInfo = null;
-
-  // Request method buckets.
-  // Keys are method names ex. 'GET', 'POST' etc.
-  this.routeConfigs = {};
-}
-
-function RouteConfig (middleware, handlers) {
-  // Middleware callback stack.
-  this.middleware = middleware;
-
-  // Handler stack
-  this.handlers = handlers;
-}
-
-function ParamInfo (name, index) {
-  // Property/variable name.
-  this.name = name;
-
-  // Used to access the index of the split incoming route.
-  this.index = index;
-}
-
-// Route creation context.
-function RouteCreationContext () {
-  this.requestMethod = '*';
-  this.paramTreeNode = null;
-}
+const RouteParamMapNode = require('./utils/route-param-map-node');
+const RouteConfig = require('./utils/route-config');
+const ParamInfo = require('./utils/param-info');
+const RouteCreationContext = require('./utils/route-creation-context');
 
 let routeCreationContext = null;
 
@@ -44,16 +11,45 @@ let routeCreationContext = null;
 @method Router
  */
 function Router (req, res) {}
+Router._routeParamTreeRoot = new RouteParamMapNode(); // Tree sorted by router expression chunks.
+Router._routeParamMapNodeCache = {}; // RouteParamMapNode look-up cache by route expression.
 
-/*
-Testing references.
-*/
+/**
+@method _generateUrlChunks
+ */
+Router._generateUrlChunks = function (pathname) {
+  var result = null;
+  var slashChar = '/';
 
-// Tree sorted by router expression chunks.
-Router._routeParamTree = new RouteParamMapNode();
+  // Normalize slashes.
+  pathname = pathname.replace(/\/+/g, slashChar);
 
-// Store index of where to find the paramaeter in the parsed route url.
-Router._routeParamMapNodeCache = {};
+  // Remove last slash if exists and it's not the only part of the route.
+  var routeExpLen = pathname.length;
+  if (routeExpLen > 1) {
+    var firstChar = pathname.charAt(0);
+    var lastChar = pathname.charAt(routeExpLen - 1);
+
+    if (firstChar === slashChar &&
+      lastChar === slashChar) {
+      pathname = pathname.substring(1, routeExpLen - 1);
+    } else if (firstChar === slashChar) {
+      pathname = pathname.substring(1);
+    } else if (lastChar === slashChar) {
+      pathname = pathname.substring(0, routeExpLen - 1);
+    }
+  }
+
+  firstChar = pathname.charAt(0);
+  if (firstChar === slashChar ||
+    firstChar === '') {
+    result = ['*'];
+  } else {
+    result = pathname.split('/');
+  }
+
+  return result;
+};
 
 /**
 @method _handle
@@ -96,13 +92,13 @@ Router._route = function (routeExp) {
   var paramTreeNode = Router._routeParamMapNodeCache[routeExp];
 
   if (paramTreeNode === undefined) {
-    var routeExpChunks = generateUrlChunks(routeExp);
+    var routeExpChunks = Router._generateUrlChunks(routeExp);
     var routeChunk = null;
     var i = -1;
     var n = routeExpChunks.length;
     var paramInfo = null;
 
-    paramTreeNode = Router._routeParamTree;
+    paramTreeNode = Router._routeParamTreeRoot;
 
     // Insert route config into route tree.
     // Iterate from top of the tree -> down.
