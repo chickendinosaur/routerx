@@ -21,7 +21,7 @@ function Router (req, res) {
   // Parse URL pathname.
   var urlChunks = Router._generateUrlChunks(parsedUrl.pathname);
 
-  Router._findRoute(method, urlChunks);
+  Router._findRoute(_routeTreeRoot, method, urlChunks);
 }
 
 Router._routeTreeRoot = _routeTreeRoot;
@@ -34,13 +34,12 @@ If not route match is found the root
 
 @method _findRoute
  */
-Router._findRoute = function (method, urlChunks) {
+Router._findRoute = function (routeTreeNode, method, urlChunks) {
   // Look for a URL match in the param tree.
-  var routeTreeNode = _routeTreeRoot;
   var i = -1;
   var n = urlChunks.length;
 
-  // If path exists by number of chunks or path was not created.
+  // Attempt to locate route.
   while (++i < n) {
     if (routeTreeNode.nodes !== null) {
       break;
@@ -107,9 +106,6 @@ Router._handle = function () {
   } else {
     route.handlers = arguments;
   }
-
-  // Free _route.
-  _currRoute = null;
 };
 
 /**
@@ -171,9 +167,6 @@ Router._route = function (routeExp) {
 
         routeParamInfo.push(new ParamInfo(routeChunk.substring(1), i));
         break;
-      // Wildcards
-      case '*':
-        return routeAPIChainLink;
       // Static params.
       default:
         // Generate a static param map to lookup possible matches.
