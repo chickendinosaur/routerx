@@ -11,7 +11,9 @@ if (isBrowser) {
 Setup
 */
 
-const router = require('../src/router');
+var express = require('express');
+var querystring = require('querystring');
+var router = express.Router();
 
 var request = {
   method: 'GET',
@@ -32,10 +34,8 @@ var request = {
   }
 };
 
-router
-.get('products/:category/:id')
-.use(function (req, res, next) { next(); })
-.handle(function (req) {});
+router.use(function (req, event, next) { req.query = querystring.parse(req._parsedUrl.query); next(); });
+router.get('/products/:category/:id', function (req, res) {});
 
 /*
 Benchmark
@@ -43,7 +43,8 @@ Benchmark
 
 suite
 .add('Define route.', function () {
-  router.get('products/:category/:id').use(function (req, res, next) { next(); }).handle(function (req) {});
+  router.use(function (req, event, next) { next(); });
+  router.get('/products/:category/:id', function (req, res) {});
 })
 .add('Navigate.', function () {
   router(request);

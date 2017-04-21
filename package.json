@@ -9,13 +9,13 @@
     "benchmark": "cd benchmark && for %i in (*.benchmark.js*) do echo. && echo %i && echo. && browserify -t babelify %i | browser-run",
     "benchmark:router": "node benchmark/router.benchmark.js",
     "benchmark:grapnel": "node benchmark/grapnel.benchmark.js",
+    "benchmark:express": "node benchmark/express.benchmark.js",
     "build": "npm run clean && babel src -d lib --ignore *.*.js* && cp package.json lib & cp README.md lib & cp LICENSE lib",
     "clean": "rm -rf lib",
     "deploy": "npm run test && npm run build && npm publish lib",
     "start": "webpack-dev-server --inline",
     "test": "cd test && (for /R %i in (*.spec.js*) do (browserify -t babelify %i | tap-closer | browser-run | tap-spec)) && cd .. && eslint src --fix && eslint example --fix && eslint benchmark --fix && eslint test --fix && csscomb src && csscomb example",
-    "test:router": "babel-tape-runner test/router.spec.js | tap-spec",
-    "test:generate-url-chunks": "babel-tape-runner test/generate-url-chunks.spec.js | tap-spec"
+    "test:router": "babel-tape-runner test/router.spec.js | tap-spec"
   },
   "author": {
     "name": "John Pittman",
@@ -59,9 +59,11 @@
     "eslint-plugin-promise": "^3.5.0",
     "eslint-plugin-react": "^6.10.0",
     "eslint-plugin-standard": "^2.1.1",
+    "express": "^4.15.2",
     "file-loader": "^0.10.1",
     "grapnel": "^0.6.4",
     "node-sass": "^4.5.0",
+    "querystring": "^0.2.0",
     "sass-loader": "^6.0.2",
     "style-loader": "^0.13.2",
     "tap-closer": "^1.0.0",

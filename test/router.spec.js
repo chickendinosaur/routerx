@@ -11,6 +11,7 @@ Setup
 */
 
 const Router = require('../src/router');
+const Route = require('../src/utils/route');
 
 let middleware1 = function (req, res, next) { next(); };
 let middleware2 = function (req, res, next) { next(); };
@@ -22,10 +23,11 @@ let asyncHandler2 = function (req, res) {};
 
 var testPathname = '///a/:id//b//';
 var testPathnameSingleSlash = '/';
+var testURL = 'a/1/b';
+var testURLChunks = testURL.split('/');
 
 Router
-.on('get')
-.route(testPathname)
+.get(testPathname)
 .use(middleware1, [asyncMiddleware1, asyncMiddleware2], middleware2)
 .handle(handler, [asyncHandler1, asyncHandler2]);
 
@@ -54,34 +56,39 @@ test('Router', function (t) {
   });
 
   t.test('_route', function (t) {
-    let paramTreeNode = Router._routeParamTreeRoot;
+    let paramTreeNode = Router._routeTreeRoot;
 
     t.notEqual(paramTreeNode.nodes['a'], undefined, 'Created static param tree node.');
     t.notEqual(paramTreeNode.nodes['a'].nodes[':'], undefined, 'Created dynamic param tree node.');
     t.notEqual(paramTreeNode.nodes['a'].nodes[':'].nodes['b'], undefined, 'Ceated static node from dynamic node.');
-    t.equal(paramTreeNode.nodes['a'].nodes[':'].nodes['b'].paramInfo[0].name, 'id', 'Stored param name in generated route info.');
-    t.equal(paramTreeNode.nodes['a'].nodes[':'].nodes['b'].paramInfo[0].index, 1, 'Stored index of param in url.');
+    t.equal(paramTreeNode.nodes['a'].nodes[':'].nodes['b'].routes['GET'].paramInfo[0].name, 'id', 'Stored param name in generated route info.');
+    t.equal(paramTreeNode.nodes['a'].nodes[':'].nodes['b'].routes['GET'].paramInfo[0].index, 1, 'Stored index of param in url.');
     t.end();
   });
 
   t.test('_use', function (t) {
-    let paramTreeNode = Router._routeParamTreeRoot;
+    let paramTreeNode = Router._routeTreeRoot;
 
-    t.equal(paramTreeNode.nodes['a'].nodes[':'].nodes['b'].routeConfigs['GET'].middleware.length, 3, 'Middleware added..');
+    t.equal(paramTreeNode.nodes['a'].nodes[':'].nodes['b'].routes['GET'].middleware.length, 3, 'Middleware added..');
     t.end();
   });
 
   t.test('_handle', function (t) {
-    let paramTreeNode = Router._routeParamTreeRoot;
+    let paramTreeNode = Router._routeTreeRoot;
 
-    t.equal(paramTreeNode.nodes['a'].nodes[':'].nodes['b'].routeConfigs['GET'].handlers.length, 2, 'Handlers added..');
+    t.equal(paramTreeNode.nodes['a'].nodes[':'].nodes['b'].routes['GET'].handlers.length, 2, 'Handlers added..');
     t.end();
   });
 
   t.test('.on', function (t) {
-    let paramTreeNode = Router._routeParamTreeRoot;
+    let paramTreeNode = Router._routeTreeRoot;
 
-    t.notEqual(paramTreeNode.nodes['a'].nodes[':'].nodes['b'].routeConfigs['GET'], undefined, 'Request method type transformed to uppercase.');
+    t.notEqual(paramTreeNode.nodes['a'].nodes[':'].nodes['b'].routes['GET'], undefined, 'Request method type transformed to uppercase.');
+    t.end();
+  });
+
+  t.test('_findRoute', function (t) {
+    t.equal(Router._findRoute('GET', testURLChunks), Route, 'Stored index of param in url.');
     t.end();
   });
 

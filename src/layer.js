@@ -2,9 +2,10 @@
 
 module.exports = Layer;
 
-function Layer (paramTreeNode, timeout) {
-  this._middleware = null;
-  this._timeout = timeout || 30;
+function Layer (id, routeConfig, paramInfo, done) {
+  this._routeConfig = routeConfig;
+  this._paramInfo = paramInfo;
+  this._currCallbackChain = routeConfig.middleware;
 }
 
-Layer.prototype.next = () => {};
+Layer.prototype.next = function () {};

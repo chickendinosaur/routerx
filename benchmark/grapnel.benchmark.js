@@ -25,7 +25,7 @@ suite
   router.get('products/:category/a', function (req, event, next) { next(); }, function (req) {});
 })
 .add('Navigate.', function () {
-  router.navigate('products/a/1');
+  router.navigate('http://www.github.com/products/1/2?p1=11&p2=22');
 })
 .on('cycle', function (event) {
   var output = String(event.target);
