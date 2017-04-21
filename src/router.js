@@ -167,6 +167,10 @@ Router._route = function (routeExp) {
 
         routeParamInfo.push(new ParamInfo(routeChunk.substring(1), i));
         break;
+      // Wildcards
+      case '*':
+        routeTreeNode.wildcard = true;
+        return routeAPIChainLink;
       // Static params.
       default:
         // Generate a static param map to lookup possible matches.

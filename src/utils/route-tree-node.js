@@ -6,9 +6,11 @@ module.exports = function RouteTreeNode () {
   // '*' represents wildcard.
   this.nodes = null;
 
-  // Keys of nodes cache.
-  // Used to recurively add wildcard middleware to all child routes.
-  this._nodesKeys = null;
+  this.staticNodes = null;
+
+  this.dynamicNode = null;
+
+  this.wildcard = false;
 
   // Request method buckets.
   // Keys are method names ex. 'GET', 'POST' etc.
